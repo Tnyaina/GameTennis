@@ -1,0 +1,11 @@
+readonly : indique que le champ ne peut être assigné qu'une seule fois après sa déclaration
+async Task : retourne generalement un Task (async le fait) 
+            ,asynchrone permet d'effectuer des opérations longues ou bloquantes 
+            sans bloquer le thread appelant.
+exemple : public async Task DoSomethingAsync()
+        {
+            // Exemple d'une tâche asynchrone
+            await Task.Delay(1000); // Attend 1 seconde de manière asynchrone
+            Console.WriteLine("Operation completed.");
+        }
+await   : indique que l'exécution de la méthode doit attendre que la tâche spécifiée soit terminée.

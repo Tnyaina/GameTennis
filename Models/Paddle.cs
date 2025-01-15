@@ -5,33 +5,30 @@ using System.Drawing.Drawing2D;
 namespace GameTennis.Models
 {
     public class Paddle
-    {
-        public float X { get; set; }
-        public float Y { get; set; }
-        public int Radius { get; set; }
-        public float Time { get; set; }
-        public float Speed { get; set; }
-        public TrajectoryType CurrentTrajectory { get; set; }
-        public Rectangle Bounds { get; set; }
-        public int Points { get; set; } // Points que vaut cette raquette
-        private float originalX;
-        private bool isRightPaddle;
-        private bool isFrontPaddle;
+{
+    public float X { get; set; }
+    public float Y { get; set; }
+    public int Radius { get; set; } = 20;
+    public float Time { get; set; }
+    public float Speed { get; set; }
+    public TrajectoryType CurrentTrajectory { get; set; }
+    public Rectangle Bounds { get; set; }
+    public int Points { get; set; }
+    private float originalX;
+    private bool isRightPaddle;
+    private bool isFrontPaddle;
 
-        public Paddle(int x, int y, Rectangle bounds, bool isRight, bool isFront)
-        {
-            X = x;
-            originalX = x;
-            Y = y;
-            Radius = 20;
-            Time = 0;
-            Speed = 0.05f;
-            CurrentTrajectory = TrajectoryType.Linear;
-            Bounds = bounds;
-            isRightPaddle = isRight;
-            isFrontPaddle = isFront;
-            Points = 1; // Par défaut, une raquette vaut 1 point
-        }
+    public Paddle(int x, int y, Rectangle bounds, bool isRight, bool isFront)
+    {
+        X = x;
+        originalX = x;
+        Y = y;
+        Time = 0;
+        CurrentTrajectory = TrajectoryType.Linear;
+        Bounds = bounds;
+        isRightPaddle = isRight;
+        isFrontPaddle = isFront;
+    }
 
         public void Move()
         {

@@ -40,3 +40,4 @@ c:\Users\Nyx\Desktop\DOTNET\GameTennis\obj\Debug\net8.0-windows\refint\GameTenni
 c:\Users\Nyx\Desktop\DOTNET\GameTennis\obj\Debug\net8.0-windows\GameTennis.pdb
 C:\Users\Nyx\Desktop\DOTNET\GameTennis\obj\Debug\net8.0-windows\GameTennis.genruntimeconfig.cache
 C:\Users\Nyx\Desktop\DOTNET\GameTennis\obj\Debug\net8.0-windows\ref\GameTennis.dll
+c:\Users\Nyx\Desktop\DOTNET\GameTennis\obj\Debug\net8.0-windows\GameTennis.sourcelink.json

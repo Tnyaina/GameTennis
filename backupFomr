@@ -331,29 +331,24 @@ namespace GameTennis
         }
 
         private void NewGameButton_Click(object? sender, EventArgs e)
-    {
-        if (gameTimer != null)
         {
-            gameTimer.Stop();
-            gameTimer.Tick -= GameLoop;
-            gameTimer.Dispose();
-            gameTimer = null;
+            if (gameTimer != null)
+            {
+                gameTimer.Stop();
+                gameTimer.Tick -= GameLoop;
+                gameTimer.Dispose();
+                gameTimer = null;
+            }
+
+            // Fermer les fenêtres de trajectoire si elles sont ouvertes
+            leftFrontTrajectoryForm?.Close();
+            leftBackTrajectoryForm?.Close();
+            rightFrontTrajectoryForm?.Close();
+            rightBackTrajectoryForm?.Close();
+
+            this.Controls.Clear();
+            InitializeGame();
         }
-
-        // Fermer les fenêtres de trajectoire si elles sont ouvertes
-        leftFrontTrajectoryForm?.Close();
-        leftBackTrajectoryForm?.Close();
-        rightFrontTrajectoryForm?.Close();
-        rightBackTrajectoryForm?.Close();
-
-        if (gameScore != null)
-        {
-            gameScore.ResetMatch(); // Réinitialiser complètement le match
-        }
-
-        this.Controls.Clear();
-        InitializeGame();
-    }
 
         private void InitializeMenuStrip()
         {
@@ -428,100 +423,101 @@ namespace GameTennis
         }
 
         private async void GameLoop(object? sender, EventArgs e)
-    {
-        if (!gameScore!.IsMatchOver && !isPaused)
         {
-            // Mise à jour des positions
-            ball!.Move(gameField);
-            leftPaddleFront!.Move();
-            leftPaddleBack!.Move();
-            rightPaddleFront!.Move();
-            rightPaddleBack!.Move();
+            if (!gameScore!.IsGameOver && !isPaused)
+            {
+                // Mise à jour des positions
+                ball!.Move(gameField);
+                leftPaddleFront!.Move();
+                leftPaddleBack!.Move();
+                rightPaddleFront!.Move();
+                rightPaddleBack!.Move();
 
-            // Vérification des collisions avec les raquettes
-            if (CheckPaddleCollision(leftPaddleFront))
-            {
-                gameScore.AddPointRight(leftPaddleFront.Points);
-                if (currentMatchId > 0)
+                // Vérification des collisions avec les raquettes
+                if (CheckPaddleCollision(leftPaddleFront))
                 {
-                    await SaveCurrentScore();
+                    gameScore.AddPointRight(leftPaddleFront.Points);
+                    if (currentMatchId > 0)
+                    {
+                        await SaveCurrentScore();
+                    }
+                    ResetBall();
                 }
-                ResetBall();
-            }
-            else if (CheckPaddleCollision(leftPaddleBack))
-            {
-                gameScore.AddPointRight(leftPaddleBack.Points);
-                if (currentMatchId > 0)
+                else if (CheckPaddleCollision(leftPaddleBack))
                 {
-                    await SaveCurrentScore();
+                    gameScore.AddPointRight(leftPaddleBack.Points);
+                    if (currentMatchId > 0)
+                    {
+                        await SaveCurrentScore();
+                    }
+                    ResetBall();
                 }
-                ResetBall();
-            }
-            else if (CheckPaddleCollision(rightPaddleFront))
-            {
-                gameScore.AddPointLeft(rightPaddleFront.Points);
-                if (currentMatchId > 0)
+                else if (CheckPaddleCollision(rightPaddleFront))
                 {
-                    await SaveCurrentScore();
+                    gameScore.AddPointLeft(rightPaddleFront.Points);
+                    if (currentMatchId > 0)
+                    {
+                        await SaveCurrentScore();
+                    }
+                    ResetBall();
                 }
-                ResetBall();
-            }
-            else if (CheckPaddleCollision(rightPaddleBack))
-            {
-                gameScore.AddPointLeft(rightPaddleBack.Points);
-                if (currentMatchId > 0)
+                else if (CheckPaddleCollision(rightPaddleBack))
                 {
-                    await SaveCurrentScore();
+                    gameScore.AddPointLeft(rightPaddleBack.Points);
+                    if (currentMatchId > 0)
+                    {
+                        await SaveCurrentScore();
+                    }
+                    ResetBall();
                 }
-                ResetBall();
+
+                // Gestion de la fin de partie
+                if (gameScore.IsGameOver)
+                {
+                    try
+                    {
+                        // Mettre à jour le gagnant
+                        await dbConnection!.UpdateMatchWinner(
+                            currentMatchId,
+                            gameScore.Winner);
+
+                        // Sauvegarder le score final
+                        await SaveCurrentScore();
+
+                        pauseButton!.Visible = false;
+                        newGameButton!.Visible = true;
+                    }
+                    catch (Exception ex)
+                    {
+                        MessageBox.Show(
+                            $"Erreur lors de la sauvegarde du match : {ex.Message}",
+                            "Erreur",
+                            MessageBoxButtons.OK,
+                            MessageBoxIcon.Error
+                        );
+                    }
+                }
             }
 
-            // Gestion de la fin de match
-            if (gameScore.IsMatchOver)
-            {
-                try
-                {
-                    // Mettre à jour le gagnant
-                    await dbConnection!.UpdateMatchWinner(
-                        currentMatchId,
-                        gameScore.Winner);
-
-                    // Sauvegarder le score final
-                    await SaveCurrentScore();
-
-                    pauseButton!.Visible = false;
-                    newGameButton!.Visible = true;
-                }
-                catch (Exception ex)
-                {
-                    MessageBox.Show(
-                        $"Erreur lors de la sauvegarde du match : {ex.Message}",
-                        "Erreur",
-                        MessageBoxButtons.OK,
-                        MessageBoxIcon.Error
-                    );
-                }
-            }
+            this.Invalidate();
         }
-
-        this.Invalidate();
-    }
 
         // Nouvelle méthode pour sauvegarder le score courant
         private async Task SaveCurrentScore()
-    {
-        try
         {
-            await dbConnection!.SavePoint(
-                currentMatchId,
-                $"{gameScore!.GetLeftScore()} ({gameScore.GetSetsScore().Split('-')[0]})",
-                $"{gameScore.GetRightScore()} ({gameScore.GetSetsScore().Split('-')[1]})");
+            try
+            {
+                await dbConnection!.SavePoint(
+                    currentMatchId,
+                    gameScore!.GetLeftScore(),
+                    gameScore.GetRightScore());
+            }
+            catch (Exception ex)
+            {
+                // Log l'erreur mais ne pas interrompre le jeu
+                Console.WriteLine($"Erreur lors de la sauvegarde du point : {ex.Message}");
+            }
         }
-        catch (Exception ex)
-        {
-            Console.WriteLine($"Erreur lors de la sauvegarde du point : {ex.Message}");
-        }
-    }
 
         private void ResetBall()
         {
@@ -539,105 +535,98 @@ namespace GameTennis
         }
 
         protected override void OnPaint(PaintEventArgs e)
-    {
-        base.OnPaint(e);
-        Graphics g = e.Graphics;
-        g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
-
-        // Fond noir pour toute la fenêtre
-        g.Clear(Color.Black);
-
-        // Zone de score
-        using (Font scoreFont = new Font("Arial", 24, FontStyle.Bold))
-        using (Font nameFont = new Font("Arial", 20))
         {
-            // Noms des joueurs
-            g.DrawString(gameScore!.LeftPlayerName, nameFont, Brushes.White,
-                FIELD_MARGIN, menuStrip!.Height + 20);
-            g.DrawString(gameScore.RightPlayerName, nameFont, Brushes.White,
-                this.Width - FIELD_MARGIN - g.MeasureString(gameScore.RightPlayerName, nameFont).Width,
-                menuStrip.Height + 20);
+            base.OnPaint(e);
+            Graphics g = e.Graphics;
+            g.SmoothingMode = System.Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
-            // Scores du jeu en cours
-            string leftScore = gameScore.GetLeftScore();
-            string rightScore = gameScore.GetRightScore();
+            // Fond noir pour toute la fenêtre
+            g.Clear(Color.Black);
 
-            g.DrawString(leftScore, scoreFont, Brushes.White,
-                FIELD_MARGIN, menuStrip.Height + 50);
-            g.DrawString(rightScore, scoreFont, Brushes.White,
-                this.Width - FIELD_MARGIN - g.MeasureString(rightScore, scoreFont).Width,
-                menuStrip.Height + 50);
-
-            // Score des sets
-            string setsScore = gameScore.GetSetsScore();
-            g.DrawString($"Sets: {setsScore}", scoreFont, Brushes.White,
-                this.Width / 2 - g.MeasureString($"Sets: {setsScore}", scoreFont).Width / 2,
-                menuStrip.Height + 50);
-        }
-
-        // Dessiner le terrain de tennis
-        using (SolidBrush fieldBrush = new SolidBrush(Color.ForestGreen))
-        using (Pen fieldPen = new Pen(Color.White, 3))
-        using (Pen linePen = new Pen(Color.White, 2))
-        {
-            // Terrain principal
-            g.FillRectangle(fieldBrush, gameField);
-            g.DrawRectangle(fieldPen, gameField);
-
-            // Ligne centrale verticale
-            g.DrawLine(fieldPen,
-                gameField.Left + (gameField.Width / 2), gameField.Top,
-                gameField.Left + (gameField.Width / 2), gameField.Bottom);
-
-            // Lignes de service
-            int serviceLineOffset = gameField.Width / 6;
-
-            // Lignes horizontales
-            g.DrawLine(linePen,
-                gameField.Left, gameField.Top + (gameField.Height / 4),
-                gameField.Right, gameField.Top + (gameField.Height / 4));
-            g.DrawLine(linePen,
-                gameField.Left, gameField.Bottom - (gameField.Height / 4),
-                gameField.Right, gameField.Bottom - (gameField.Height / 4));
-
-            // Lignes verticales des carrés de service
-            g.DrawLine(linePen,
-                gameField.Left + serviceLineOffset, gameField.Top + (gameField.Height / 4),
-                gameField.Left + serviceLineOffset, gameField.Bottom - (gameField.Height / 4));
-            g.DrawLine(linePen,
-                gameField.Right - serviceLineOffset, gameField.Top + (gameField.Height / 4),
-                gameField.Right - serviceLineOffset, gameField.Bottom - (gameField.Height / 4));
-        }
-
-        // Message de fin de match si nécessaire
-        if (gameScore!.IsMatchOver)
-        {
-            using (Font winFont = new Font("Arial", 36, FontStyle.Bold))
+            // Zone de score
+            using (Font scoreFont = new Font("Arial", 24, FontStyle.Bold))
+            using (Font nameFont = new Font("Arial", 20))
             {
-                string message = $"{gameScore.Winner} a gagné le match!";
-                SizeF size = g.MeasureString(message, winFont);
+                // Noms des joueurs
+                g.DrawString(gameScore!.LeftPlayerName, nameFont, Brushes.White,
+                    FIELD_MARGIN, menuStrip!.Height + 20);
+                g.DrawString(gameScore.RightPlayerName, nameFont, Brushes.White,
+                    this.Width - FIELD_MARGIN - g.MeasureString(gameScore.RightPlayerName, nameFont).Width,
+                    menuStrip.Height + 20);
 
-                using (SolidBrush overlay = new SolidBrush(Color.FromArgb(180, 0, 0, 0)))
-                {
-                    g.FillRectangle(overlay,
-                        gameField.Left + (gameField.Width - size.Width) / 2 - 20,
-                        gameField.Top + (gameField.Height - size.Height) / 2 - 20,
-                        size.Width + 40,
-                        size.Height + 40);
-                }
+                // Scores
+                string leftScore = gameScore.GetLeftScore();
+                string rightScore = gameScore.GetRightScore();
 
-                g.DrawString(message, winFont, Brushes.Gold,
-                    gameField.Left + (gameField.Width - size.Width) / 2,
-                    gameField.Top + (gameField.Height - size.Height) / 2);
+                g.DrawString(leftScore, scoreFont, Brushes.White,
+                    FIELD_MARGIN, menuStrip.Height + 50);
+                g.DrawString(rightScore, scoreFont, Brushes.White,
+                    this.Width - FIELD_MARGIN - g.MeasureString(rightScore, scoreFont).Width,
+                    menuStrip.Height + 50);
             }
-        }
 
-        // Dessiner les objets
-        ball!.Draw(g);
-        leftPaddleFront!.Draw(g);
-        leftPaddleBack!.Draw(g);
-        rightPaddleFront!.Draw(g);
-        rightPaddleBack!.Draw(g);
-    }
+            // Dessiner le terrain de tennis
+            using (SolidBrush fieldBrush = new SolidBrush(Color.ForestGreen))
+            using (Pen fieldPen = new Pen(Color.White, 3))
+            using (Pen linePen = new Pen(Color.White, 2))
+            {
+                // Terrain principal
+                g.FillRectangle(fieldBrush, gameField);
+                g.DrawRectangle(fieldPen, gameField);
+
+                // Ligne centrale verticale
+                g.DrawLine(fieldPen,
+                    gameField.Left + (gameField.Width / 2), gameField.Top,
+                    gameField.Left + (gameField.Width / 2), gameField.Bottom);
+
+                // Lignes de service
+                int serviceLineOffset = gameField.Width / 6;
+
+                // Lignes horizontales
+                g.DrawLine(linePen,
+                    gameField.Left, gameField.Top + (gameField.Height / 4),
+                    gameField.Right, gameField.Top + (gameField.Height / 4));
+                g.DrawLine(linePen,
+                    gameField.Left, gameField.Bottom - (gameField.Height / 4),
+                    gameField.Right, gameField.Bottom - (gameField.Height / 4));
+
+                // Lignes verticales des carrés de service
+                g.DrawLine(linePen,
+                    gameField.Left + serviceLineOffset, gameField.Top + (gameField.Height / 4),
+                    gameField.Left + serviceLineOffset, gameField.Bottom - (gameField.Height / 4));
+                g.DrawLine(linePen,
+                    gameField.Right - serviceLineOffset, gameField.Top + (gameField.Height / 4),
+                    gameField.Right - serviceLineOffset, gameField.Bottom - (gameField.Height / 4));
+            }
+
+            if (gameScore!.IsGameOver)
+            {
+                using (Font winFont = new Font("Arial", 36, FontStyle.Bold))
+                {
+                    string message = $"{gameScore.Winner} a gagné!";
+                    SizeF size = g.MeasureString(message, winFont);
+
+                    using (SolidBrush overlay = new SolidBrush(Color.FromArgb(180, 0, 0, 0)))
+                    {
+                        g.FillRectangle(overlay,
+                            gameField.Left + (gameField.Width - size.Width) / 2 - 20,
+                            gameField.Top + (gameField.Height - size.Height) / 2 - 20,
+                            size.Width + 40,
+                            size.Height + 40);
+                    }
+
+                    g.DrawString(message, winFont, Brushes.Gold,
+                        gameField.Left + (gameField.Width - size.Width) / 2,
+                        gameField.Top + (gameField.Height - size.Height) / 2);
+                }
+            }
+
+            // Dessiner les objets
+            ball!.Draw(g);
+            leftPaddleFront!.Draw(g);
+            leftPaddleBack!.Draw(g);
+            rightPaddleFront!.Draw(g);
+            rightPaddleBack!.Draw(g);
+        }
     }
 }

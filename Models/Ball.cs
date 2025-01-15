@@ -10,6 +10,7 @@ namespace GameTennis.Models
         public float SpeedX { get; set; }
         public float SpeedY { get; set; }
         public int Radius { get; set; }
+        public Paddle? TargetPaddle { get; set; }
 
         public Ball(int x, int y)
         {
@@ -21,9 +22,31 @@ namespace GameTennis.Models
 
         public void ResetBall()
         {
-            Random rand = new Random();
-            SpeedX = rand.Next(5, 8) * (rand.Next(2) == 0 ? -1 : 1);
-            SpeedY = rand.Next(5, 8) * (rand.Next(2) == 0 ? -1 : 1);
+            if (TargetPaddle != null)
+            {
+                // Calculer la direction vers la raquette ciblée
+                float dx = TargetPaddle.X - X;
+                float dy = TargetPaddle.Y - Y;
+                float distance = (float)Math.Sqrt(dx * dx + dy * dy);
+                
+                // Normaliser et appliquer la vitesse
+                float speed = new Random().Next(5, 8);
+                SpeedX = (dx / distance) * speed;
+                SpeedY = (dy / distance) * speed;
+                
+                // Ajouter une légère variation aléatoire
+                SpeedY += new Random().Next(-2, 3);
+            }
+            else
+            {
+                // Comportement original si aucune raquette n'est ciblée
+                Random rand = new Random();
+                SpeedX = rand.Next(5, 8) * (rand.Next(2) == 0 ? -1 : 1);
+                SpeedY = rand.Next(5, 8) * (rand.Next(2) == 0 ? -1 : 1);
+            }
+            
+            // Réinitialiser la cible après le lancement
+            TargetPaddle = null;
         }
 
         public void Move(Rectangle bounds)

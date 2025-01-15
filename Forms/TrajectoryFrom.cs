@@ -91,7 +91,7 @@ namespace GameTennis.Forms
                 Location = new System.Drawing.Point(10, 25),
                 Size = new System.Drawing.Size(330, 25),
                 Minimum = 1,
-                Maximum = 2,
+                Maximum = 10,
                 Value = paddle.Points,
                 BackColor = Color.FromArgb(80, 80, 80),
                 ForeColor = Color.White
